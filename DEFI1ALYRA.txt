@@ -1,0 +1,121 @@
+//⚡️ Défi - Système de vote
+// SPDX-License-Identifier: MIT
+pragma solidity 0.6.11;
+import "https://github.com/OpenZeppelin/openzeppelin-contracts/contracts/access/Ownable.sol";
+ 
+contract Voting is Ownable{
+address public Admin;
+mapping(address => Voter) public voters;
+
+// Type pour une proposition.
+struct Proposal {
+string name;
+uint voteCount;}
+
+struct Voter {
+bool isRegistered;
+bool hasVoted;
+uint votedProposalId;}
+
+// Un tableau dynamique de structs `Proposal`.
+Proposal[] public proposals;
+
+event VoterRegistered(address voterAddress);
+event ProposalsRegistrationStarted();
+event ProposalsRegistrationEnded();
+event ProposalRegistered(uint proposalId);
+event VotingSessionStarted();
+event VotingSessionEnded();
+event Voted (address voter, uint proposalId);
+event VotesTallied();
+event Newcycle();  
+
+
+enum WorkflowStatus {
+RegisteringVoters,
+ProposalsRegistrationStarted,
+ProposalsRegistrationEnded,
+VotingSessionStarted,
+VotingSessionEnded,
+VotesTallied
+}
+
+event WorkflowStatusChange(WorkflowStatus previousStatus, WorkflowStatus newStatus);      
+ WorkflowStatus public workflowStatus= WorkflowStatus.RegisteringVoters;
+ 
+function nextStage() public onlyOwner {
+   workflowStatus = WorkflowStatus((uint(workflowStatus) + 1));
+
+    
+   if (workflowStatus == WorkflowStatus(1)) { emit ProposalsRegistrationStarted();}
+   if (workflowStatus == WorkflowStatus(2)) { emit ProposalsRegistrationEnded();}
+   if (workflowStatus == WorkflowStatus(3)) { emit VotingSessionStarted();}
+   if (workflowStatus == WorkflowStatus(4)) { emit VotingSessionEnded();}
+   if (workflowStatus == WorkflowStatus(5)) { emit VotesTallied();}
+
+emit WorkflowStatusChange(WorkflowStatus(uint(workflowStatus)-1),WorkflowStatus( uint(workflowStatus) ) );}
+
+function isRegistered(address voterAddress) public onlyOwner {
+            Voter storage sender = voters[msg.sender];
+            require(!sender.isRegistered, "usager déjà enrengistré!");
+            sender.isRegistered = true;
+            emit VoterRegistered(voterAddress); 
+}    
+
+function getStatus() public view returns (WorkflowStatus) {
+    return workflowStatus;
+}
+
+
+    function proposer(string  memory names) public {
+            Voter storage sender = voters[msg.sender];
+   assert(sender.isRegistered);
+   assert((workflowStatus ==WorkflowStatus(1)));
+   require(!(workflowStatus == WorkflowStatus(2)),"le depot n est plus possible");
+                  proposals.push(Proposal({
+                name: names,
+                voteCount: 0
+            }));
+            }
+      
+    /// 
+    function vote(address voterAddress,uint votedProposalId) public {
+
+        Voter storage sender = voters[msg.sender];
+		
+		require((workflowStatus == WorkflowStatus(3)),"le vote n'a pas encore commencé");
+		require(!(workflowStatus == WorkflowStatus(4)),"le vote est déjà fini");
+        
+		require(!sender.hasVoted, "a déjà voté.");
+ 	    sender.hasVoted= true;
+      //  sender.vote= votedProposalId;
+
+        // Si `votedProposalId` n'est pas un index valide,
+        // une erreur sera levée et l'exécution annulée
+        proposals[votedProposalId].voteCount += 1;
+		emit Voted (voterAddress, votedProposalId);
+    }
+	
+
+    ///  Calcule la proposition gagnante
+    /// en prenant tous les votes précédents en compte.
+    function winningProposalID() public view
+            returns (uint winningProposalID_)
+    {require((workflowStatus == WorkflowStatus(5)),"le comptage n est pas possible pour le moment");
+            uint winningVoteCount = 0;
+               for (uint p = 0; p < proposals.length; p++) {
+            if (proposals[p].voteCount > winningVoteCount) {
+                winningVoteCount = proposals[p].voteCount;
+                winningProposalID_ = p;
+             } 
+        }
+    }
+	
+	
+
+     function winnerName() public view
+            returns (string memory winnerName_)
+    {
+        winnerName_ = proposals[winningProposalID()].name;
+    }
+}
