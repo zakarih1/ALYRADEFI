@@ -1,0 +1,39 @@
+1.
+
+pragma solidity ^0.5.12; // version à préciser ...Trop vague ici
+ 
+contract Crowdsale {
+   using SafeMath for uint256;
+ 
+   address public owner; // the owner of the contract
+   address public escrow; // wallet to collect raised ETH
+   uint256 public savedBalance = 0; // Total amount raised in ETH
+   mapping (address => uint256) public balances; // Balances in incoming Ether
+       //  " uint256 public savedBalance ; " A PRIVILEGIER car evite redondance
+
+   // Initialization
+   function Crowdsale(address _escrow) public{
+       owner = tx.origin; // adress de celui qui deploye le contrat
+       // add address of the specific contract
+       escrow = _escrow;
+   }
+  
+   // function to receive ETH
+   function() public {
+       balances[msg.sender] = balances[msg.sender].add(msg.value);
+       savedBalance = savedBalance.add(msg.value);
+       escrow.send(msg.value);// privilégier la méthode "pull over payment" car .send 'est pas fiable
+   //aucun montant minimal défini pour savoir si il y a intéret à effectuer une transaction, plus ou moins sécuriséé...
+   }
+  
+   // refund investisor
+   function withdrawPayments() public{
+       address payee = msg.sender;
+       uint256 payment = balances[payee];
+ 
+       payee.send(payment);//idem
+ 
+       savedBalance = savedBalance.sub(payment);
+       balances[payee] = 0;
+   }
+}
