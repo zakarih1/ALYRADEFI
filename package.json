@@ -1,0 +1,21 @@
+{
+  "name": "whitelist-react-box-master",
+  "version": "1.0.0",
+  "description": "",
+  "main": "truffle-config.js",
+  "directories": {
+    "test": "test"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^2.5.1",
+    "bignumber.js": "^9.0.1",
+    "bootstrap": "^4.6.0",
+    "react-bootstrap": "^1.5.2",
+    "zeppelin-solidity": "^1.12.0"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC"
+}
